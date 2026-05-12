@@ -5,8 +5,8 @@
 //  + Real-Time Live Clock (Date & Time)
 // ═══════════════════════════════════════════════
 
-// ── Default: Fallback URL (เว้นว่างไว้เพื่อความปลอดภัย บังคับใช้ Backend เป็นหลัก)
-const DEFAULT_API_URL = '';
+// ── Default: Fallback URL (ใช้ Google Sheets นี้เป็นค่าเริ่มต้น)
+const DEFAULT_API_URL = 'https://docs.google.com/spreadsheets/d/1aJ4U6-GDM-Sh3Qk8XIIra9XTe_ex6A5GCehSuScTeDc/edit?usp=sharing';
 let currentApiUrl = DEFAULT_API_URL;  // ผู้ใช้สามารถตั้งค่าแหล่งข้อมูลใหม่ได้ผ่าน UI
 
 let rawData = [];
@@ -649,16 +649,19 @@ function initDataSources() {
     }
   }
 
-  // Ensure we always have the default Google Sheet entry
-  if (!dataSources.some(s => s.isDefault)) {
+  // Ensure we always have the default Google Sheet entry and update it to the latest DEFAULT_API_URL
+  const defaultSrc = dataSources.find(s => s.isDefault);
+  if (defaultSrc) {
+    defaultSrc.url = DEFAULT_API_URL;
+  } else {
     dataSources.unshift({
       id: 'src_default',
       name: "ฐานข้อมูล อบรม (Google Sheet)",
       url: DEFAULT_API_URL,
       isDefault: true
     });
-    saveDataSources();
   }
+  saveDataSources();
 }
 
 function saveDataSources() {
