@@ -1076,8 +1076,8 @@ function processBackendResult(result, showRefreshToast, isBackgroundSync) {
 
   // อัปเดต KPI ตรงจาก backend
   const DURATION = 1500;
-  animateValue('valTotal',    kpis.total,    DURATION);
-  animateValue('valDsrYes',   kpis.dsr_yes,  DURATION);
+  animateValue('valTotal', kpis.total, DURATION);
+  animateValue('valDsrYes', kpis.dsr_yes, DURATION);
   animateValue('valProjects', kpis.projects, DURATION);
   triggerKpiPulse();
 
@@ -1140,10 +1140,10 @@ function _populateFilters(filters) {
 async function applyFiltersBackend() {
   if (!backendOnline) { applyFilters(); return; }
   try {
-    const year    = document.getElementById('yearFilter')?.value    || '';
-    const type_   = document.getElementById('typeFilter')?.value    || '';
-    const method  = document.getElementById('methodFilter')?.value  || '';
-    const dept    = document.getElementById('deptFilter')?.value    || '';
+    const year = document.getElementById('yearFilter')?.value || '';
+    const type_ = document.getElementById('typeFilter')?.value || '';
+    const method = document.getElementById('methodFilter')?.value || '';
+    const dept = document.getElementById('deptFilter')?.value || '';
     const project = document.getElementById('projectFilter')?.value || '';
     const result = await DashAPI.fetchMainData({ year, type: type_, method, dept, project });
     processBackendResult(result, false, false);
@@ -1222,7 +1222,7 @@ function _fetchFromGoogleSheets(url, showRefreshToast, isBackgroundSync) {
       updateHeadingsFromData(data);
       initFilters();
       if (!isBackgroundSync) {
-        ['projectFilter','yearFilter','typeFilter','methodFilter','deptFilter']
+        ['projectFilter', 'yearFilter', 'typeFilter', 'methodFilter', 'deptFilter']
           .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         render(data); triggerKpiPulse(); triggerCardStagger();
       } else { applyFilters(); }
@@ -1230,7 +1230,10 @@ function _fetchFromGoogleSheets(url, showRefreshToast, isBackgroundSync) {
       if (showRefreshToast) showToast(`✓ รีเฟรชสำเร็จ — ${data.length.toLocaleString()} รายการ`, 'refresh-cw');
       return data;
     })
-    .catch(() => { if (!isBackgroundSync) showToast('โหลดข้อมูลไม่สำเร็จ', 'alert-circle'); });
+    .catch((e) => {
+      if (!isBackgroundSync) showToast('โหลดข้อมูลไม่สำเร็จ', 'alert-circle');
+      throw e;
+    });
 }
 
 function startRealtimeSync() {
@@ -1298,13 +1301,16 @@ window.onload = async () => {
     triggerCardStagger();
     const cacheAge = Date.now() - new Date(cached.time).getTime();
     if (cacheAge >= 300000) {
-      fetchDataFromAPI(currentApiUrl, false, true).catch(() => {});
+      fetchDataFromAPI(currentApiUrl, false, true).catch(() => { });
     }
   } else {
-    // มี backend online → ดึงจาก backend โดยตรง
+    // มี backend online หรือไม่มีข้อมูล → ดึงจาก backend/URL
     fetchDataFromAPI(currentApiUrl, false).catch(() => {
-      const p = document.querySelector('#loader p');
-      if (p) p.innerText = 'โหลดข้อมูลไม่สำเร็จ';
+      hideLoader();
+      setTimeout(() => {
+        showToast('กรุณาเพิ่มแหล่งข้อมูลใหม่ในตั้งค่า (Settings)', 'alert-circle');
+        render([]); // render empty state
+      }, 500);
     });
   }
 };
