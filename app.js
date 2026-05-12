@@ -1281,40 +1281,48 @@ window.onload = async () => {
   initMagneticHover();
   startRealtimeSync();
 
-  // ── Probe Backend แล้วตัดสินใจว่าจะดึงข้อมูลจากไหน ──
-  const isOnline = await probeBackend();
-
-  const savedUrl = localStorage.getItem(CACHE_KEY_URL);
-  if (savedUrl && savedUrl.includes('script.google.com/a/macros/horwang')) {
-    localStorage.removeItem(CACHE_KEY_URL);
-    localStorage.removeItem(CACHE_KEY_DATA);
-    localStorage.removeItem(CACHE_KEY_TIME);
-  } else if (savedUrl && !isOnline) {
-    // ถ้า backend ออฟไลน์ ใช้ saved URL เป็น fallback
-    currentApiUrl = savedUrl;
-  }
-
+  // ── 1. Priority Load: แสดงข้อมูลจาก Cache ทันที (ถ้ามี) ──
   const cached = loadDataFromCache();
-  if (cached && !isOnline) {
-    // ไม่มี backend + มี cache → แสดง cache ทันที
+  if (cached) {
     processNewData(cached.data);
     hideLoader();
     updateCacheInfoBar();
     triggerKpiPulse();
     triggerCardStagger();
-    const cacheAge = Date.now() - new Date(cached.time).getTime();
-    if (cacheAge >= 300000) {
-      fetchDataFromAPI(currentApiUrl, false, true).catch(() => { });
-    }
-  } else {
-    // มี backend online หรือไม่มีข้อมูล → ดึงจาก backend/URL
-    fetchDataFromAPI(currentApiUrl, false).catch(() => {
-      hideLoader();
-      setTimeout(() => {
-        showToast('กรุณาเพิ่มแหล่งข้อมูลใหม่ในตั้งค่า (Settings)', 'alert-circle');
-        render([]); // render empty state
-      }, 500);
-    });
   }
+
+  // ── 2. Background Task: ตรวจสอบ Backend และอัปเดตข้อมูล ──
+  // ไม่รอ (await) probeBackend ถ้านี่เป็นการโหลดครั้งแรกที่มี cache แล้ว
+  // เพื่อให้ UI ตอบสนองเร็วที่สุด
+  const probePromise = probeBackend();
+
+  // จัดการ URL และสถานะออนไลน์
+  probePromise.then(async (isOnline) => {
+    const savedUrl = localStorage.getItem(CACHE_KEY_URL);
+    if (savedUrl && savedUrl.includes('script.google.com/a/macros/horwang')) {
+      localStorage.removeItem(CACHE_KEY_URL);
+      localStorage.removeItem(CACHE_KEY_DATA);
+      localStorage.removeItem(CACHE_KEY_TIME);
+    } else if (savedUrl && !isOnline) {
+      currentApiUrl = savedUrl;
+    }
+
+    if (cached) {
+      // มี cache แล้ว → ตรวจสอบว่าต้อง sync หรือไม่ (5 นาที)
+      const cacheAge = Date.now() - new Date(cached.time).getTime();
+      if (cacheAge >= 300000 || isOnline) {
+        fetchDataFromAPI(currentApiUrl, false, true).catch(() => { });
+      }
+    } else {
+      // ไม่มี cache → ต้องรอโหลดจริง
+      fetchDataFromAPI(currentApiUrl, false).catch(() => {
+        hideLoader();
+        setTimeout(() => {
+          showToast('กรุณาเพิ่มแหล่งข้อมูลใหม่ในตั้งค่า (Settings)', 'alert-circle');
+          render([]);
+        }, 500);
+      });
+    }
+  });
 };
 

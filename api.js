@@ -58,8 +58,13 @@ const DashAPI = (() => {
    */
   async function isOnline() {
     try {
-      const res = await health();
-      return res.status === 'ok';
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000); // 2s timeout
+      const res = await fetch(`${BASE_URL}/health`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (!res.ok) return false;
+      const json = await res.json();
+      return json.status === 'ok';
     } catch (_) {
       return false;
     }
