@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════
 
 // ── Default: Fallback URL (ใช้ Google Sheets นี้เป็นค่าเริ่มต้น)
-const DEFAULT_API_URL = 'https://docs.google.com/spreadsheets/d/1aJ4U6-GDM-Sh3Qk8XIIra9XTe_ex6A5GCehSuScTeDc/edit?usp=sharing';
+const DEFAULT_API_URL = 'https://docs.google.com/spreadsheets/d/1JDF6K4_SISkRhGwnofAtCf7lsgpYsnM3Ow8ov1mGwlE/edit?usp=drivesdk';
 let currentApiUrl = DEFAULT_API_URL;  // ผู้ใช้สามารถตั้งค่าแหล่งข้อมูลใหม่ได้ผ่าน UI
 
 let rawData = [];
